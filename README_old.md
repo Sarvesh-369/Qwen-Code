@@ -54,7 +54,7 @@ For detailed setup instructions, see [Authorization](#authorization).
 - **Code Understanding & Editing** - Query and edit large codebases beyond traditional context window limits
 - **Workflow Automation** - Automate operational tasks like handling pull requests and complex rebases
 - **Enhanced Parser** - Adapted parser specifically optimized for Qwen-Coder models
-- **Vision Model Support** - Automatically detect images in your input and seamlessly switch to vision-capable models for multimodal analysis. Works in both interactive and non-interactive modes.
+- **Vision Model Support** - Automatically detect images in your input and seamlessly switch to vision-capable models for multimodal analysis
 
 ## Installation
 
@@ -100,41 +100,6 @@ qwen
 > Generate unit tests for this module
 ```
 
-### Vision Model Support
-
-Qwen Code includes intelligent vision model auto-switching that detects images in your input and can automatically switch to vision-capable models for multimodal analysis.
-
-**Interactive Mode:**
-When you include images in your queries, you'll see a dialog asking how you'd like to handle the vision model switch.
-
-**Non-Interactive Mode:**
-You can pass images directly via the command line. The CLI will automatically switch to a vision model (defaulting to a one-time switch) to process the request.
-
-```bash
-qwen --prompt "Describe this image @path/to/image.jpg"
-```
-
-**Supported Backends:**
-Vision support works with:
-
-- **Qwen OAuth**: Automatically switches to Qwen's vision models.
-- **Self-Hosted / OpenAI Compatible**: Works with any provider (e.g., vLLM) that supports the configured vision model or if you are already using a vision-capable model.
-
-#### Configuration
-
-You can configure the default switching behavior in your `.qwen/settings.json` or via command line flags:
-
-```bash
-# Switch once per query
-qwen --vlm-switch-mode once
-
-# Switch for entire session
-qwen --vlm-switch-mode session
-
-# Never switch automatically
-qwen --vlm-switch-mode persist
-```
-
 ### Session Management
 
 Control your token usage with configurable session limits to optimize costs and performance.
@@ -157,11 +122,63 @@ Create or edit `.qwen/settings.json` in your home directory:
 
 > 📝 **Note**: Session token limit applies to a single conversation, not cumulative API calls.
 
-## Authorization
+### Vision Model Configuration
+
+Qwen Code includes intelligent vision model auto-switching that detects images in your input and can automatically switch to vision-capable models for multimodal analysis. **This feature is enabled by default** - when you include images in your queries, you'll see a dialog asking how you'd like to handle the vision model switch.
+
+#### Skip the Switch Dialog (Optional)
+
+If you don't want to see the interactive dialog each time, configure the default behavior in your `.qwen/settings.json`:
+
+```json
+{
+  "experimental": {
+    "vlmSwitchMode": "once"
+  }
+}
+```
+
+**Available modes:**
+
+- **`"once"`** - Switch to vision model for this query only, then revert
+- **`"session"`** - Switch to vision model for the entire session
+- **`"persist"`** - Continue with current model (no switching)
+- **Not set** - Show interactive dialog each time (default)
+
+#### Command Line Override
+
+You can also set the behavior via command line:
+
+```bash
+# Switch once per query
+qwen --vlm-switch-mode once
+
+# Switch for entire session
+qwen --vlm-switch-mode session
+
+# Never switch automatically
+qwen --vlm-switch-mode persist
+```
+
+#### Disable Vision Models (Optional)
+
+To completely disable vision model support, add to your `.qwen/settings.json`:
+
+```json
+{
+  "experimental": {
+    "visionModelPreview": false
+  }
+}
+```
+
+> 💡 **Tip**: In YOLO mode (`--yolo`), vision switching happens automatically without prompts when images are detected.
+
+### Authorization
 
 Choose your preferred authentication method based on your needs:
 
-### 1. Qwen OAuth (🚀 Recommended - Start in 30 seconds)
+#### 1. Qwen OAuth (🚀 Recommended - Start in 30 seconds)
 
 The easiest way to get started - completely free with generous quotas:
 
@@ -185,7 +202,7 @@ qwen
 - ✅ **Zero cost** for individual users
 - ℹ️ **Note**: Model fallback may occur to maintain service quality
 
-### 2. OpenAI-Compatible API
+#### 2. OpenAI-Compatible API
 
 Use API keys for OpenAI or other compatible providers:
 

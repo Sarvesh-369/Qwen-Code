@@ -22,7 +22,7 @@ import {
 /**
  * Checks if a PartListUnion contains image parts
  */
-function hasImageParts(parts: PartListUnion): boolean {
+export function hasImageParts(parts: PartListUnion): boolean {
   if (typeof parts === 'string') {
     return false;
   }
@@ -46,7 +46,7 @@ function hasImageParts(parts: PartListUnion): boolean {
 /**
  * Checks if a single Part is an image part
  */
-function isImagePart(part: Part): boolean {
+export function isImagePart(part: Part): boolean {
   // Check for inlineData with image mime type
   if ('inlineData' in part && part.inlineData?.mimeType?.startsWith('image/')) {
     return true;
@@ -63,7 +63,7 @@ function isImagePart(part: Part): boolean {
 /**
  * Checks if image parts have supported formats and returns unsupported ones
  */
-function checkImageFormatsSupport(parts: PartListUnion): {
+export function checkImageFormatsSupport(parts: PartListUnion): {
   hasImages: boolean;
   hasUnsupportedFormats: boolean;
   unsupportedMimeTypes: string[];
@@ -124,9 +124,9 @@ export function shouldOfferVisionSwitch(
   visionModelPreviewEnabled: boolean = true,
 ): boolean {
   // Only trigger for qwen-oauth
-  if (authType !== AuthType.QWEN_OAUTH) {
-    return false;
-  }
+  // if (authType !== AuthType.QWEN_OAUTH) {
+  //   return false;
+  // }
 
   // If vision model preview is disabled, never offer vision switch
   if (!visionModelPreviewEnabled) {

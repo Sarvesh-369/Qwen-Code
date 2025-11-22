@@ -16,13 +16,22 @@ import {
   promptIdContext,
   OutputFormat,
   uiTelemetryService,
-} from '@qwen-code/qwen-code-core';
+
+  getUnsupportedImageFormatWarning,
+  AuthType} from '@qwen-code/qwen-code-core';
 import type { Content, Part, PartListUnion } from '@google/genai';
 import type { CLIUserMessage, PermissionMode } from './nonInteractive/types.js';
 import type { JsonOutputAdapterInterface } from './nonInteractive/io/BaseJsonOutputAdapter.js';
 import { JsonOutputAdapter } from './nonInteractive/io/JsonOutputAdapter.js';
 import { StreamJsonOutputAdapter } from './nonInteractive/io/StreamJsonOutputAdapter.js';
 import type { ControlService } from './nonInteractive/control/ControlService.js';
+
+import {
+  shouldOfferVisionSwitch,
+  processVisionSwitchOutcome,
+  checkImageFormatsSupport,
+} from './ui/hooks/useVisionAutoSwitch.js';
+import { VisionSwitchOutcome } from './ui/components/ModelSwitchDialog.js';
 
 import { handleSlashCommand } from './nonInteractiveCliCommands.js';
 import { handleAtCommand } from './ui/hooks/atCommandProcessor.js';
@@ -159,6 +168,78 @@ export async function runNonInteractive(
       }
 
       const initialParts = normalizePartList(initialPartList);
+
+      // Check for image parts and handle vision model switching
+      const contentGeneratorConfig = config.getContentGeneratorConfig();
+      if (contentGeneratorConfig) {
+        const formatCheck = checkImageFormatsSupport(initialParts);
+        if (formatCheck.hasUnsupportedFormats) {
+          console.warn(getUnsupportedImageFormatWarning());
+        }
+
+        const visionModelPreviewEnabled =
+          settings.merged.experimental?.visionModelPreview ?? true;
+
+        if (
+          shouldOfferVisionSwitch(
+            initialParts,
+            contentGeneratorConfig.authType || AuthType.QWEN_OAUTH, // Default to QWEN_OAUTH if undefined, or just pass a dummy if we don't care
+            config.getModel(),
+            visionModelPreviewEnabled,
+          )
+        ) {
+          const vlmSwitchMode = settings.merged.experimental?.vlmSwitchMode;
+          let outcome: VisionSwitchOutcome =
+            VisionSwitchOutcome.ContinueWithCurrentModel;
+
+          if (config.getApprovalMode() === 'yolo') {
+            outcome = VisionSwitchOutcome.SwitchOnce;
+          } else if (vlmSwitchMode) {
+            switch (vlmSwitchMode) {
+              case 'once':
+                outcome = VisionSwitchOutcome.SwitchOnce;
+                break;
+              case 'session':
+                outcome = VisionSwitchOutcome.SwitchSessionToVL;
+                break;
+              case 'persist':
+                outcome = VisionSwitchOutcome.ContinueWithCurrentModel;
+                break;
+              default:
+                // Should not happen if types are correct, but safe fallback
+                outcome = VisionSwitchOutcome.SwitchOnce;
+                break;
+            }
+          } else {
+            // Default to switching once if not specified, to ensure images are processed
+            outcome = VisionSwitchOutcome.SwitchOnce;
+          }
+
+          const visionSwitchResult = processVisionSwitchOutcome(outcome);
+          if (visionSwitchResult.modelOverride) {
+            await config.setModel(visionSwitchResult.modelOverride, {
+              reason: 'vision_auto_switch',
+              context: 'Non-interactive auto-switch for image content',
+            });
+            if (config.getDebugMode()) {
+              console.log(
+                `[NonInteractive] Switched to vision model: ${visionSwitchResult.modelOverride}`,
+              );
+            }
+          } else if (visionSwitchResult.persistSessionModel) {
+            await config.setModel(visionSwitchResult.persistSessionModel, {
+              reason: 'vision_auto_switch',
+              context:
+                'Non-interactive auto-switch for image content (session)',
+            });
+            if (config.getDebugMode()) {
+              console.log(
+                `[NonInteractive] Switched session to vision model: ${visionSwitchResult.persistSessionModel}`,
+              );
+            }
+          }
+        }
+      }
       let currentMessages: Content[] = [{ role: 'user', parts: initialParts }];
 
       if (adapter) {
