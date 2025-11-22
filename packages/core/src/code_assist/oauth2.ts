@@ -39,7 +39,7 @@ const OAUTH_CLIENT_ID =
 // which you embed in the source code of your application. (In this context,
 // the client secret is obviously not treated as a secret.)"
 const OAUTH_CLIENT_SECRET =
-  process.env.QWEN_OAUTH_CLIENT_SECRET || 'PLACEHOLDER_SECRET';
+  process.env['QWEN_OAUTH_CLIENT_SECRET'] || 'PLACEHOLDER_SECRET';
 
 // OAuth Scopes for Cloud Code authorization.
 const OAUTH_SCOPE = [
