@@ -124,9 +124,9 @@ export function shouldOfferVisionSwitch(
   visionModelPreviewEnabled: boolean = true,
 ): boolean {
   // Only trigger for qwen-oauth
-  // if (authType !== AuthType.QWEN_OAUTH) {
-  //   return false;
-  // }
+  if (authType !== AuthType.QWEN_OAUTH) {
+    return false;
+  }
 
   // If vision model preview is disabled, never offer vision switch
   if (!visionModelPreviewEnabled) {
