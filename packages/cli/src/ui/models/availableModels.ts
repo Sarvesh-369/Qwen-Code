@@ -83,11 +83,26 @@ export function getAvailableModelsForAuthType(
  * until our coding model supports multimodal.
  */
 export function getDefaultVisionModel(): string {
-  return MAINLINE_VLM;
+  return process.env['QWEN_VISION_MODEL'] || MAINLINE_VLM;
 }
 
 export function isVisionModel(modelId: string): boolean {
-  return AVAILABLE_MODELS_QWEN.some(
+  if (!modelId) return false;
+
+  // Check known models
+  const isKnownVision = AVAILABLE_MODELS_QWEN.some(
     (model) => model.id === modelId && model.isVision,
+  );
+  if (isKnownVision) return true;
+
+  // Heuristic check for self-hosted/external models
+  const lowerId = modelId.toLowerCase();
+  return (
+    lowerId.includes('vl') ||
+    lowerId.includes('vision') ||
+    lowerId.includes('omni') ||
+    lowerId.includes('gpt-4o') ||
+    lowerId.includes('claude-3') ||
+    lowerId.includes('gemini-1.5')
   );
 }
